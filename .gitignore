@@ -1,4 +1,3 @@
+Makefile
 .env
-.venv/
 ___NOT_USED/
-alembic.ini
