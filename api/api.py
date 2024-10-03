@@ -227,6 +227,7 @@ def role():
     return jsonify(response)
 
 
+#todo : add role to the profile
 @app.route('/auth/profile', methods=['GET'])
 @jwt_required()
 def profile():
@@ -242,6 +243,7 @@ def profile():
     response = {
         "message": f"You have access your user profile information.",
         "user_profile": {
+            "user_id":user.id,
             "user_name":user.user_name, 
             "email":user.email,
             "bio":user_profile.bio,
@@ -275,7 +277,7 @@ def get_users():
     return jsonify(user_list)
 
 
-
+#Todo : fix not working
 @app.route('/users/<int:id>', methods=['GET'])
 @jwt_required()
 def get_user_profile(id):
@@ -294,8 +296,7 @@ def get_user_profile(id):
     else:
         return jsonify({"message": "User not found"}), 404
 
-
-
+#Todo : fix not working 
 @app.route('/users/<int:id>/role', methods=['PUT'])
 @jwt_required()
 def update_user_role(id):
@@ -314,7 +315,7 @@ def update_user_role(id):
     else:
         return jsonify({"message": "User not found"}), 404
 
-
+#Todo : fix not working
 @app.route('/users/<int:id>', methods=['PUT'])
 @jwt_required()
 def update_user_profile(id):
@@ -330,7 +331,7 @@ def update_user_profile(id):
     else:
         return jsonify({"message": "User profile not found"}), 404
 
-
+#Todo : fix not working
 @app.route('/users/<int:id>', methods=['DELETE'])
 @jwt_required()
 def delete_user(id):
