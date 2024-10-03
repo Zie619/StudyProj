@@ -202,22 +202,150 @@ def logout():
 
 
 
-@app.route('/protected', methods=['GET'])
+@app.route('/auth/role', methods=['GET'])
 @jwt_required()
-def protected():
+def role():
     jwt_data = get_jwt()  # Get the JWT token payload
-    user_role = jwt_data['sub']['role']  # Access the 'role' from the 'identity' (which is stored in 'sub')
+    user_role_name = jwt_data['sub']['role']  # Access the 'role' from the 'identity' (stored in 'sub')
+
+    # Query to get all roles from the database
+    roles = session.query(Role).all()
+
+    # List of role names
+    role_names = [role.role_name for role in roles]
+
+    # Query to find the full user role object (based on the name from JWT)
+    user_role = session.query(Role).filter_by(role_name=user_role_name).first()
+
+    # Construct the response
+    response = {
+        "message": f"You have access to the protected route with role: {user_role.role_name}",
+        "roles_list": role_names,
+        "user_role": {"id": user_role.id, "name": user_role.role_name}
+    }
+    # Return the response as JSON
+    return jsonify(response)
+
+
+@app.route('/auth/profile', methods=['GET'])
+@jwt_required()
+def profile():
+    jwt_data = get_jwt()  # Get the JWT token payload
+    user_name = jwt_data['sub']['user_name']  # Access the 'role' from the 'identity' (stored in 'sub')
+
+    # Query to get all roles from the database
+    user_data_table = session.query(UserProfile, User).join(User, UserProfile.user_id == User.id).filter_by(user_name=user_name).first()
+
+    if user_data_table:
+        user_profile, user = user_data_table  # Unpack the tuple into UserProfile and User
+
+    response = {
+        "message": f"You have access your user profile information.",
+        "user_profile": {
+            "user_name":user.user_name, 
+            "email":user.email,
+            "bio":user_profile.bio,
+            "first_name":user_profile.first_name,
+            "last_name":user_profile.last_name
+            } 
+    }
+
+    # Return the response as JSON
+    return jsonify(response)
+
+
+#TODO:
+#Check the routes for user down below 
+
+
+@app.route('/users', methods=['GET'])
+@jwt_required()  # Ensure the user is authenticated
+def get_users():
+    # Check if the current user is an Admin
+    current_user_role = get_jwt_identity()['role']
+    if current_user_role != 'Admin':
+        return jsonify({"message": "You do not have access to this resource"}), 403
     
-    return jsonify(message=f"You have access to the protected route with role: {user_role}")
+    # Get all users from the database
+    users = session.query(User).all()
+    
+    # Convert users to a list of dictionaries
+    user_list = [{"id": user.id, "name": user.user_name, "email": user.email} for user in users]
+    
+    return jsonify(user_list)
 
 
 
+@app.route('/users/<int:id>', methods=['GET'])
+@jwt_required()
+def get_user_profile(id):
+    # Query to get all roles from the database
+    user_data_table = session.query(UserProfile, User).join(User, UserProfile.user_id == User.id).filter_by(user_name=user_name).first()
+
+    if user_data_table:
+        user_profile, user = user_data_table  # Unpack the tuple into UserProfile and User
+        return jsonify({
+            "user_name":user.user_name, 
+            "email":user.email,
+            "bio":user_profile.bio,
+            "first_name":user_profile.first_name,
+            "last_name":user_profile.last_name
+        })
+    else:
+        return jsonify({"message": "User not found"}), 404
 
 
 
+@app.route('/users/<int:id>/role', methods=['PUT'])
+@jwt_required()
+def update_user_role(id):
+    current_user_role = get_jwt_identity()['role']
+    if current_user_role != 'Admin':
+        return jsonify({"message": "You do not have permission to change roles"}), 403
+
+    data = request.get_json()
+    new_role = data.get('role')
+    
+    user = session.query(User).filter_by(id=id).first()
+    if user:
+        user.role = new_role  # Assume the role is stored as a simple field in User table
+        session.commit()
+        return jsonify({"message": "User role updated successfully"})
+    else:
+        return jsonify({"message": "User not found"}), 404
 
 
+@app.route('/users/<int:id>', methods=['PUT'])
+@jwt_required()
+def update_user_profile(id):
+    user_profile = session.query(UserProfile).filter_by(user_id=id).first()
+    if user_profile:
+        data = request.get_json()
+        user_profile.first_name = data.get('first_name', user_profile.first_name)
+        user_profile.last_name = data.get('last_name', user_profile.last_name)
+        user_profile.bio = data.get('bio', user_profile.bio)
+        
+        session.commit()
+        return jsonify({"message": "Profile updated successfully"})
+    else:
+        return jsonify({"message": "User profile not found"}), 404
 
+
+@app.route('/users/<int:id>', methods=['DELETE'])
+@jwt_required()
+def delete_user(id):
+    current_user_role = get_jwt_identity()['role']
+    if current_user_role != 'Admin':
+        return jsonify({"message": "You do not have permission to delete users"}), 403
+
+    user = session.query(User).filter_by(id=id).first()
+    if user:
+        # Optionally, you can "deactivate" the user instead of deleting by setting a flag
+        session.delete(user)
+        session.commit()
+        return jsonify({"message": "User deleted successfully"})
+    else:
+        return jsonify({"message": "User not found"}), 404
 
 
 
