@@ -1,0 +1,12 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: api",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/api/api.py",
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
