@@ -13,7 +13,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n  \"user_name\": \"elf\",\r\n  \"email\": \"afd@example.com\",\r\n  \"password\": \"password123\",\r\n  \"role\": \"Student\",\r\n  \"invite_code\": \"gsdgdsg\",\r\n  \"first_name\": \"django\",\r\n  \"last_name\": \"tete\",\r\n  \"bio\": \"this is a bio test\"\r\n}\r\n",
+					"raw": "{\r\n  \"user_name\": \"eliad\",\r\n  \"email\": \"eliad@example.com\",\r\n  \"password\": \"eliadad\",\r\n  \"role\": \"Admin\",\r\n  \"invite_code\": \"829b5fd8bb0fa86f777a475358bb5111\",\r\n  \"first_name\": \"eliad\",\r\n  \"last_name\": \"shahar\"\r\n}\r\n",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -38,11 +38,21 @@
 		{
 			"name": "http://localhost:5000/login",
 			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "",
+							"type": "string"
+						}
+					]
+				},
 				"method": "POST",
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n  \"user_name\": \"el\",\r\n  \"password\": \"password123\"\r\n}\r\n",
+					"raw": "{\r\n  \"user_name\": \"eliad\",\r\n  \"password\": \"eliadad\"\r\n}\r\n",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -72,7 +82,7 @@
 					"bearer": [
 						{
 							"key": "token",
-							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTcyNzk3MzQzMCwianRpIjoiODFkYjQxNWYtMTUwNS00NjRkLWJkYzAtYjYwN2M3ZTUxOTQ1IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6eyJ1c2VyX25hbWUiOiJlbGYiLCJyb2xlIjoiU3R1ZGVudCJ9LCJuYmYiOjE3Mjc5NzM0MzAsImNzcmYiOiJmNzI0MDRmZi04Y2VlLTRjZmYtYmViZS02MzU3ODg4YzhkNGYiLCJleHAiOjE3Mjc5NzcwMzB9.IaIuFvkcX_FolYVpjQCUTBR7_T3GAzZStFbZDgDrMxI",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTcyODM5ODQxNiwianRpIjoiMGM4MTIyMjgtOTE0NC00ZTM0LTkwZDItMWExYzliYWVjMzA5IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6eyJ1c2VyX25hbWUiOiJlbGlhZCIsInJvbGUiOiJBZG1pbiJ9LCJuYmYiOjE3MjgzOTg0MTYsImNzcmYiOiJiY2JkZDIyZC05NDAwLTRiODItOGEzYy0wZmM5NzBlNTgxMzIiLCJleHAiOjE3Mjg0MDIwMTZ9.KrbYQp5yeXoPUNvO2fhkvuNBFysp__J1zbu8VQR-nmw",
 							"type": "string"
 						}
 					]
@@ -97,6 +107,16 @@
 		{
 			"name": "http://localhost:5000/auth/logout",
 			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTcyODM5MzgyOSwianRpIjoiYjQyZGNmYTAtYWEzOC00Yjk0LWE5OWQtYTYyYTg4YjAyOTllIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6eyJ1c2VyX25hbWUiOiJlbGlhZCIsInJvbGUiOiJBZG1pbiJ9LCJuYmYiOjE3MjgzOTM4MjksImNzcmYiOiJjMjAzNTAyMS0zYWUxLTQyYTItYjhkNy01ZmNmYzNjNzY2ZjUiLCJleHAiOjE3MjgzOTc0Mjl9.o0ZesmrBenkiSxJOriVII-NyF8HISp90sw-orz8T_MA",
+							"type": "string"
+						}
+					]
+				},
 				"method": "POST",
 				"header": [],
 				"url": {
@@ -122,7 +142,7 @@
 					"bearer": [
 						{
 							"key": "token",
-							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTcyNzk3MzQzMCwianRpIjoiODFkYjQxNWYtMTUwNS00NjRkLWJkYzAtYjYwN2M3ZTUxOTQ1IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6eyJ1c2VyX25hbWUiOiJlbGYiLCJyb2xlIjoiU3R1ZGVudCJ9LCJuYmYiOjE3Mjc5NzM0MzAsImNzcmYiOiJmNzI0MDRmZi04Y2VlLTRjZmYtYmViZS02MzU3ODg4YzhkNGYiLCJleHAiOjE3Mjc5NzcwMzB9.IaIuFvkcX_FolYVpjQCUTBR7_T3GAzZStFbZDgDrMxI",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTcyODQwMDk5MiwianRpIjoiNzI4Mzc3NTgtNDkwMy00NjgxLWFlYmQtYzQzMGMyNmU2N2I5IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6eyJ1c2VyX25hbWUiOiJlbGlhZCIsInJvbGUiOiJTdHVkZW50In0sIm5iZiI6MTcyODQwMDk5MiwiY3NyZiI6IjdhNDRjMWY2LWY3MTAtNDc1Ny1hNmI5LTE0NmI2MDllZTBmMSIsImV4cCI6MTcyODQwNDU5Mn0.C11pcsxWyWnSRtMWeJX1GmEK6-l3_P25naKM3fRcq6g",
 							"type": "string"
 						}
 					]
@@ -152,7 +172,7 @@
 					"bearer": [
 						{
 							"key": "token",
-							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTcyNzk3MzQzMCwianRpIjoiODFkYjQxNWYtMTUwNS00NjRkLWJkYzAtYjYwN2M3ZTUxOTQ1IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6eyJ1c2VyX25hbWUiOiJlbGYiLCJyb2xlIjoiU3R1ZGVudCJ9LCJuYmYiOjE3Mjc5NzM0MzAsImNzcmYiOiJmNzI0MDRmZi04Y2VlLTRjZmYtYmViZS02MzU3ODg4YzhkNGYiLCJleHAiOjE3Mjc5NzcwMzB9.IaIuFvkcX_FolYVpjQCUTBR7_T3GAzZStFbZDgDrMxI",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTcyODM5NDg0NiwianRpIjoiYTYxMWM3NzktYjVmMi00YzYzLTg4YzgtOTAyOTYwYWNlZWQ3IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6eyJ1c2VyX25hbWUiOiJlbGlhZCIsInJvbGUiOiJBZG1pbiJ9LCJuYmYiOjE3MjgzOTQ4NDYsImNzcmYiOiIyNzM5MTgyYy0zZmQ4LTQ0NDAtYmRmMi04NzFkODU2MjQ5MTciLCJleHAiOjE3MjgzOTg0NDZ9.VMtH_eFvQogFCUOeuLfAePSeov5SlMZuV_j1emgMqlU",
 							"type": "string"
 						}
 					]
@@ -160,7 +180,7 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:5000/users",
+					"raw": "http://localhost:5000/users?limit=7",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -168,6 +188,12 @@
 					"port": "5000",
 					"path": [
 						"users"
+					],
+					"query": [
+						{
+							"key": "limit",
+							"value": "7"
+						}
 					]
 				}
 			},
@@ -181,7 +207,7 @@
 					"bearer": [
 						{
 							"key": "token",
-							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTcyNzk3MzQzMCwianRpIjoiODFkYjQxNWYtMTUwNS00NjRkLWJkYzAtYjYwN2M3ZTUxOTQ1IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6eyJ1c2VyX25hbWUiOiJlbGYiLCJyb2xlIjoiU3R1ZGVudCJ9LCJuYmYiOjE3Mjc5NzM0MzAsImNzcmYiOiJmNzI0MDRmZi04Y2VlLTRjZmYtYmViZS02MzU3ODg4YzhkNGYiLCJleHAiOjE3Mjc5NzcwMzB9.IaIuFvkcX_FolYVpjQCUTBR7_T3GAzZStFbZDgDrMxI",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTcyODQwMjI2MCwianRpIjoiYmVlMTA4YzMtOTI5OC00YmNiLWFhMTAtMDUxNzYwNzAxZGUwIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6eyJ1c2VyX25hbWUiOiJlbGlhZCIsInJvbGUiOiJTdHVkZW50In0sIm5iZiI6MTcyODQwMjI2MCwiY3NyZiI6ImNmMWFlMGQ2LTcyZDYtNDRmMy1iNzFkLWUyOGUzOWZiYmYxNCIsImV4cCI6MTcyODQwNTg2MH0.57sFOL-gl1KaHyFwj0cTaDGQ1CWLlJsXYtjdjNOODvk",
 							"type": "string"
 						}
 					]
@@ -189,7 +215,7 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:5000/users/id",
+					"raw": "http://localhost:5000/users/3",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -197,7 +223,7 @@
 					"port": "5000",
 					"path": [
 						"users",
-						"id"
+						"3"
 					]
 				}
 			},
@@ -211,15 +237,24 @@
 					"bearer": [
 						{
 							"key": "token",
-							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTcyNzk3MzQzMCwianRpIjoiODFkYjQxNWYtMTUwNS00NjRkLWJkYzAtYjYwN2M3ZTUxOTQ1IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6eyJ1c2VyX25hbWUiOiJlbGYiLCJyb2xlIjoiU3R1ZGVudCJ9LCJuYmYiOjE3Mjc5NzM0MzAsImNzcmYiOiJmNzI0MDRmZi04Y2VlLTRjZmYtYmViZS02MzU3ODg4YzhkNGYiLCJleHAiOjE3Mjc5NzcwMzB9.IaIuFvkcX_FolYVpjQCUTBR7_T3GAzZStFbZDgDrMxI",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTcyODQwMjY2MCwianRpIjoiNjg3M2RlZjktZjQwNy00Y2I1LWI1MWUtMDg4OWUxYjcwZDFjIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6eyJ1c2VyX25hbWUiOiJlbGlhZCIsInJvbGUiOiJBZG1pbiJ9LCJuYmYiOjE3Mjg0MDI2NjAsImNzcmYiOiIzNWU3NDk3Yi1iNWNkLTQ2N2YtOWYwMy1kYTk1MGQxMmNjMjAiLCJleHAiOjE3Mjg0MDYyNjB9.I62dUw5zlDrP7pzeFPDgE8XeBZxrTOc0V3E3f2GxVAk",
 							"type": "string"
 						}
 					]
 				},
 				"method": "PUT",
 				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"role\": \"Student\",\r\n  \"invite_code\": \"829b5fd8bb0fa86f777a475358bb5111\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
 				"url": {
-					"raw": "http://localhost:5000/users/id/role",
+					"raw": "http://localhost:5000/users/3/role",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -227,7 +262,7 @@
 					"port": "5000",
 					"path": [
 						"users",
-						"id",
+						"3",
 						"role"
 					]
 				}
@@ -242,15 +277,24 @@
 					"bearer": [
 						{
 							"key": "token",
-							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTcyNzk3MzQzMCwianRpIjoiODFkYjQxNWYtMTUwNS00NjRkLWJkYzAtYjYwN2M3ZTUxOTQ1IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6eyJ1c2VyX25hbWUiOiJlbGYiLCJyb2xlIjoiU3R1ZGVudCJ9LCJuYmYiOjE3Mjc5NzM0MzAsImNzcmYiOiJmNzI0MDRmZi04Y2VlLTRjZmYtYmViZS02MzU3ODg4YzhkNGYiLCJleHAiOjE3Mjc5NzcwMzB9.IaIuFvkcX_FolYVpjQCUTBR7_T3GAzZStFbZDgDrMxI",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTcyODQwMjI2MCwianRpIjoiYmVlMTA4YzMtOTI5OC00YmNiLWFhMTAtMDUxNzYwNzAxZGUwIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6eyJ1c2VyX25hbWUiOiJlbGlhZCIsInJvbGUiOiJTdHVkZW50In0sIm5iZiI6MTcyODQwMjI2MCwiY3NyZiI6ImNmMWFlMGQ2LTcyZDYtNDRmMy1iNzFkLWUyOGUzOWZiYmYxNCIsImV4cCI6MTcyODQwNTg2MH0.57sFOL-gl1KaHyFwj0cTaDGQ1CWLlJsXYtjdjNOODvk",
 							"type": "string"
 						}
 					]
 				},
 				"method": "PUT",
 				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n\"first_name\": \"eliad\",\r\n\"bio\": \"King of Rap\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
 				"url": {
-					"raw": "http://localhost:5000/users/id",
+					"raw": "http://localhost:5000/users/3",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -258,7 +302,7 @@
 					"port": "5000",
 					"path": [
 						"users",
-						"id"
+						"3"
 					]
 				}
 			},
@@ -272,7 +316,7 @@
 					"bearer": [
 						{
 							"key": "token",
-							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTcyNzk3MzQzMCwianRpIjoiODFkYjQxNWYtMTUwNS00NjRkLWJkYzAtYjYwN2M3ZTUxOTQ1IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6eyJ1c2VyX25hbWUiOiJlbGYiLCJyb2xlIjoiU3R1ZGVudCJ9LCJuYmYiOjE3Mjc5NzM0MzAsImNzcmYiOiJmNzI0MDRmZi04Y2VlLTRjZmYtYmViZS02MzU3ODg4YzhkNGYiLCJleHAiOjE3Mjc5NzcwMzB9.IaIuFvkcX_FolYVpjQCUTBR7_T3GAzZStFbZDgDrMxI",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTcyODM5MzgyOSwianRpIjoiYjQyZGNmYTAtYWEzOC00Yjk0LWE5OWQtYTYyYTg4YjAyOTllIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6eyJ1c2VyX25hbWUiOiJlbGlhZCIsInJvbGUiOiJBZG1pbiJ9LCJuYmYiOjE3MjgzOTM4MjksImNzcmYiOiJjMjAzNTAyMS0zYWUxLTQyYTItYjhkNy01ZmNmYzNjNzY2ZjUiLCJleHAiOjE3MjgzOTc0Mjl9.o0ZesmrBenkiSxJOriVII-NyF8HISp90sw-orz8T_MA",
 							"type": "string"
 						}
 					]
@@ -280,7 +324,7 @@
 				"method": "DELETE",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:5000/users/id",
+					"raw": "http://localhost:5000/users/2",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -288,7 +332,7 @@
 					"port": "5000",
 					"path": [
 						"users",
-						"id"
+						"2"
 					]
 				}
 			},
