@@ -4,17 +4,19 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.inspection import inspect
 from dotenv import load_dotenv
 import os
+
+# Import models and RoleType
 try:
-    from .models import Base, Role, User, UserProfile, Course, Module  # Relative import
+    from .models import Base, Role, User, UserProfile, Course, Module, RoleType  # Relative import
 except ImportError:
-    from models import Base, Role, User, UserProfile, Course, Module  # Direct import for terminal
+    from models import Base, Role, User, UserProfile, Course, Module, RoleType  # Direct import for terminal
 
 # Load the .env file
 load_dotenv()
 
 # Function to establish the database
 def create_db():
-    # Connect to an SQLite database (or replace with your desired database URL)
+    # Connect to the database (replace with your desired database URL)
     engine = create_engine(os.getenv("SQLALCHEMY_DATABASE_URI"), echo=False)
     
     # Check if tables already exist
@@ -34,14 +36,14 @@ def create_db():
 
     # Check if roles already exist before adding them
     existing_roles = {role.role_name for role in session.query(Role).all()}
-    default_roles = {"Admin", "Instructor", "Student"}
+    default_roles = {RoleType.ADMIN, RoleType.INSTRUCTOR, RoleType.STUDENT}
 
     roles_to_add = [Role(role_name=role) for role in default_roles if role not in existing_roles]
 
     if roles_to_add:
         session.add_all(roles_to_add)
         session.commit()
-        print(f"Added missing roles: {', '.join([role.role_name for role in roles_to_add])}")
+        print(f"Added missing roles: {', '.join([role.role_name.value for role in roles_to_add])}")
     else:
         print("All default roles already exist.")
 

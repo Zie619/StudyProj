@@ -5,9 +5,9 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import SQLAlchemyError
 from dotenv import load_dotenv
 try:
-    from .models import Base, Role, User, UserProfile, Course, Module  # Relative import
+    from .models import Base, Role, User, UserProfile, Course, Module, RoleType  # Relative import
 except ImportError:
-    from models import Base, Role, User, UserProfile, Course, Module  # Direct import for terminal
+    from models import Base, Role, User, UserProfile, Course, Module, RoleType  # Direct import for terminal
 
 from datetime import timedelta , datetime , timezone
 import bcrypt
@@ -28,7 +28,7 @@ app = Flask(__name__)
 ADMIN_INVITE_CODE = os.getenv("ADMIN_INVITE_CODE", "secret_code") 
 
 app.config['JWT_SECRET_KEY'] = os.getenv("JWT_SECRET_KEY")
-app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=60)
 
 # Initialize JWT manager
 jwt = JWTManager(app)
@@ -41,15 +41,58 @@ session = Session()
 # Create database tables if they don't exist
 Base.metadata.create_all(engine)
 
+
+@jwt.token_in_blocklist_loader
+def check_if_token_in_blocklist(jwt_header, jwt_payload):
+    jti = jwt_payload['jti']
+    user_name = jwt_payload['sub']['user_name']  # Extract user_name from the JWT payload
+
+    # Check if the jti is in the Redis set for this user
+    return redis_client.sismember(f"revoked_tokens:{user_name}", jti)
+
+@jwt.revoked_token_loader
+def revoked_token_response(jwt_header, jwt_payload):
+    return jsonify({"message": "Your token has been revoked. Please login again."}), 401
+
+@jwt.expired_token_loader
+def expired_token_response(jwt_header, jwt_payload):
+    return jsonify({"message": "Your session has expired. Please log in again."}), 401
+
+
+def generate_device_fingerprint():
+    # Get the user's IP address from the request headers
+    user_ip = request.remote_addr
+
+    # Get the User-Agent from the request headers (this contains browser and OS info)
+    user_agent = request.headers.get('User-Agent')
+
+    # Combine IP and User-Agent to create a unique "fingerprint" for the device
+    fingerprint_data = f"{user_ip}:{user_agent}"
+
+    # Hash the fingerprint data to create a unique identifier
+    fingerprint_hash = hashlib.sha256(fingerprint_data.encode()).hexdigest()
+
+    return fingerprint_hash
+
+
+def revoke_token_for_fingerprint(user_name, fingerprint):
+    old_token_jti = redis_client.get(f"active_token:{user_name}:{fingerprint}")
+    if old_token_jti:
+        # Add the old token jti to the user's set of revoked tokens
+        redis_client.sadd(f"revoked_tokens:{user_name}", old_token_jti)
+        # Optionally, set a TTL on the set (or individual entries) to clean it up after token expiration
+        redis_client.expire(f"revoked_tokens:{user_name}", timedelta(hours=1))
+
+        # Remove the old active token reference
+        redis_client.delete(f"active_token:{user_name}:{fingerprint}")
+
 # Route to register a new user
 @app.route('/auth/register', methods=['POST'])
-
 def register():
     data = request.get_json()
 
-    # Define the valid fields we expect in the JSON
     required_fields = {'user_name', 'email', 'password', 'role', 'first_name', 'last_name'}
-    optional_fields = {'bio', 'profile_picture', 'additional_info' , 'invite_code'}
+    optional_fields = {'bio', 'profile_picture', 'additional_info', 'invite_code'}
     all_valid_fields = required_fields.union(optional_fields)
 
     # Check for unexpected fields in the incoming data
@@ -66,19 +109,21 @@ def register():
     if session.query(User).filter_by(user_name=data['user_name']).first() or session.query(User).filter_by(email=data['email']).first():
         return jsonify({"message": "User already exists!"}), 400
 
-    # Check if the current user is an admin
-    if data['role'].lower() == 'admin':
+    # Validate and convert the role string to the RoleType enum
+    try:
+        role_type = RoleType(data['role'].lower())
+    except ValueError:
+        return jsonify({"message": "Invalid role provided. Choose from 'admin', 'instructor', or 'student'."}), 400
+    role = session.query(Role).filter_by(role_name=role_type).first()
+    
+    # Check if the current user is trying to register as an admin
+    if role_type == RoleType.ADMIN:
         if 'invite_code' not in data or data['invite_code'] != ADMIN_INVITE_CODE:
             return jsonify({"message": "Invalid or missing admin invite code!"}), 403
 
     # Hash the password using bcrypt
     hashed_password = bcrypt.hashpw(data['password'].encode('utf-8'), bcrypt.gensalt())
-
-    # Find the role by name (Admin, Instructor, Student)
-    role = session.query(Role).filter_by(role_name=data['role']).first()
-    if not role:
-        return jsonify({"message": "Role does not exist!"}), 400
-
+    
     # Start a transaction to ensure atomic operations
     try:
         # Create a new user
@@ -113,45 +158,6 @@ def register():
         session.rollback()  # Rollback the transaction on error
         return jsonify({"message": "Error occurred while creating user or profile", "error": str(e)}), 500
 
-
-@jwt.token_in_blocklist_loader
-def check_if_token_in_blocklist(jwt_header, jwt_payload):
-    jti = jwt_payload['jti']
-    user_name = jwt_payload['sub']['user_name']  # Extract user_name from the JWT payload
-
-    # Check if the jti is in the Redis set for this user
-    return redis_client.sismember(f"revoked_tokens:{user_name}", jti)
-
-
-def generate_device_fingerprint():
-    # Get the user's IP address from the request headers
-    user_ip = request.remote_addr
-
-    # Get the User-Agent from the request headers (this contains browser and OS info)
-    user_agent = request.headers.get('User-Agent')
-
-    # Combine IP and User-Agent to create a unique "fingerprint" for the device
-    fingerprint_data = f"{user_ip}:{user_agent}"
-
-    # Hash the fingerprint data to create a unique identifier
-    fingerprint_hash = hashlib.sha256(fingerprint_data.encode()).hexdigest()
-
-    return fingerprint_hash
-
-
-def revoke_token_for_fingerprint(user_name, fingerprint):
-    old_token_jti = redis_client.get(f"active_token:{user_name}:{fingerprint}")
-    if old_token_jti:
-        # Add the old token jti to the user's set of revoked tokens
-        redis_client.sadd(f"revoked_tokens:{user_name}", old_token_jti)
-        # Optionally, set a TTL on the set (or individual entries) to clean it up after token expiration
-        redis_client.expire(f"revoked_tokens:{user_name}", timedelta(hours=1))
-
-        # Remove the old active token reference
-        redis_client.delete(f"active_token:{user_name}:{fingerprint}")
-
-
-
 # Route to login the user
 @app.route('/auth/login', methods=['POST'])
 def login():
@@ -171,7 +177,7 @@ def login():
     revoke_token_for_fingerprint(user.user_name, device_fingerprint)
 
     # Create a new access token
-    access_token = create_access_token(identity={'user_name': user.user_name, 'role': user.role.role_name})
+    access_token = create_access_token(identity={'user_name': user.user_name, 'role': user.role.role_name.value})
     decoded_token = decode_token(access_token)
     jti = decoded_token['jti']  # Extract the JTI from the decoded token
 
@@ -213,18 +219,16 @@ def role():
 
     # Query to get all roles from the database
     roles = session.query(Role).all()
-
     # List of role names
-    role_names = [role.role_name for role in roles]
-
+    role_names = [role.role_name.value for role in roles]
     # Query to find the full user role object (based on the name from JWT)
-    user_role = session.query(Role).filter_by(role_name=user_role_name).first()
+    user_role = session.query(Role).filter_by(role_name=RoleType(user_role_name)).first()
 
     # Construct the response
     response = {
-        "message": f"You have access to the protected route with role: {user_role.role_name}",
+        "message": f"You have access to the protected route with role: {user_role.role_name.value}",
         "roles_list": role_names,
-        "user_role": {"id": user_role.id, "name": user_role.role_name}
+        "user_role": {"id": user_role.id, "name": user_role.role_name.value}
     }
     # Return the response as JSON
     return jsonify(response)
@@ -235,7 +239,6 @@ def role():
 def profile():
     jwt_data = get_jwt()  # Get the JWT token payload
     user_name = jwt_data['sub']['user_name']  # Access the 'user_name' from the 'identity' (stored in 'sub')
-    user_role = jwt_data['sub']['role']
     
     # Query to get user profile and user data using a join
     user_data_table = (
@@ -254,7 +257,7 @@ def profile():
         "user_profile": {
             "user_id": user.id,
             "user_name": user_name,
-            "user_role": user.role.role_name, 
+            "user_role": user.role.role_name.value, 
             "email": user.email,
             "bio": user_profile.bio,
             "first_name": user_profile.first_name,
@@ -271,7 +274,7 @@ def profile():
 def get_users():
     # Check if the current user is an Admin
     current_user_role = get_jwt_identity()['role']
-    if current_user_role != 'Admin':
+    if current_user_role.lower() != 'admin':
         return jsonify({"message": "You do not have access to this resource"}), 403
     
     # Get the 'limit' query parameter from the request (default to 10 if not provided)
@@ -301,7 +304,7 @@ def get_user_profile(id):
             "bio":user_profile.bio,
             "first_name":user_profile.first_name,
             "last_name":user_profile.last_name,
-            "user_role": user.role.role_name,
+            "user_role": user.role.role_name.value,
         })
     else:
         return jsonify({"message": "User not found"}), 404
@@ -314,7 +317,7 @@ def update_user_role(id):
     current_user_role = get_jwt_identity()['role']
     user = session.query(User).filter_by(id=id).first()
     data = request.get_json()
-    role_check = session.query(Role).filter_by(role_name=data.get('role')).first()
+    role_check = session.query(Role).filter_by(role_name=RoleType(data.get('role').lower())).first()
     if not role_check:
         return jsonify({"message": "Role does not exist!"}), 400
     
@@ -329,7 +332,7 @@ def update_user_role(id):
             if 'invite_code' not in data or data['invite_code'] != ADMIN_INVITE_CODE:
                 return jsonify({"message": "You do not have permission to change your role to admin"}), 403
             
-        user.role_id = session.query(Role).filter_by(role_name=new_role).first().id  # Assume the role is stored as a simple field in User table
+        user.role_id = session.query(Role).filter_by(role_name=RoleType(data.get('role').lower())).first().id  # Assume the role is stored as a simple field in User table
         session.commit()
         if user.user_name == user_name:
             logout()
@@ -348,7 +351,7 @@ def update_user_profile(id):
     user_name = jwt_data['sub']['user_name']
     user_role = jwt_data['sub']['role']
     user = session.query(User).filter_by(user_name=user_name).first()
-    if user.id != user_profile.user_id and user_role != 'Admin':
+    if user.id != user_profile.user_id and user_role.lower() != 'admin':
         return jsonify({"message": "You do not have permission to change roles"}), 403
     if not user_profile:
         return jsonify({"message": "User profile not found"}), 404
@@ -380,7 +383,7 @@ def update_user_profile(id):
 @jwt_required()
 def delete_user(id):
     current_user_role = get_jwt_identity()['role']
-    if current_user_role != 'Admin':
+    if current_user_role.lower() != 'admin':
         return jsonify({"message": "You do not have permission to delete users"}), 403
 
     user = session.query(User).filter_by(id=id).first()
