@@ -7,9 +7,9 @@ import os
 
 # Import models and RoleType
 try:
-    from .models import Base, Role, User, UserProfile, Course, Module, RoleType  # Relative import
+    from .models import Base, Role, User, UserProfile, Course, Module, RoleType, Enroll  # Relative import
 except ImportError:
-    from models import Base, Role, User, UserProfile, Course, Module, RoleType  # Direct import for terminal
+    from models import Base, Role, User, UserProfile, Course, Module, RoleType, Enroll  # Direct import for terminal
 
 # Load the .env file
 load_dotenv()
