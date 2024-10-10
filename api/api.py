@@ -599,7 +599,7 @@ def delete_module_from_course(id, moduleId):
 ############################################################## ENROLL #########################################################################
 
 
-@app.route('courses/<int:id>/enroll', methods=['POST'])
+@app.route('/courses/<int:id>/enroll', methods=['POST'])
 @jwt_required
 def enroll_to_course(id):
     current_user = get_jwt_identity()

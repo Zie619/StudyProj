@@ -35,7 +35,7 @@ class User(Base, TimestampMixin):
     role = relationship("Role", back_populates="users")
     profile = relationship("UserProfile", back_populates="user", uselist=False, cascade="all, delete-orphan", lazy='joined')
     courses = relationship("Course", back_populates="instructor" , cascade="all, delete-orphan", lazy='selectin')
-    enroll = relationship("Course", back_populates="user_enroll" , cascade="all, delete-orphan", lazy='selectin')
+    enroll = relationship("Enroll", back_populates="userenroll" , cascade="all, delete-orphan", lazy='selectin')
     def __repr__(self):
         return f"<User(id={self.id}, username={self.user_name}, email={self.email})>"
 
@@ -62,7 +62,7 @@ class Course(Base, TimestampMixin):
     course_instructor_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
     instructor = relationship("User", back_populates="courses")
     modules = relationship("Module", back_populates="course", cascade="all, delete-orphan", lazy='selectin')
-    enrolls = relationship("Enroll", back_populates="course_enroll", cascade="all, delete-orphan", lazy='selectin')
+    enrolls = relationship("Enroll", back_populates="courseenroll", cascade="all, delete-orphan", lazy='selectin')
     
     def __repr__(self):
         return f"<Course(id={self.id}, title={self.title})>"
@@ -82,9 +82,9 @@ class Enroll(Base, TimestampMixin):
     __tablename__ = 'enrolls'
     id = Column(Integer, primary_key=True)
     course_id = Column(Integer, ForeignKey('courses.id', ondelete='CASCADE'), nullable=False)
-    user_id = Column(Integer, ForeignKey('courses.id', ondelete='CASCADE'), nullable=False)
-    course_enroll = relationship("Course", back_populates="enrolls")
-    user_enroll = relationship("Course", back_populates="enrolls")
+    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    courseenroll = relationship("Course", back_populates="enrolls")
+    userenroll = relationship("User", back_populates="enroll")
     
 
     def __repr__(self):

@@ -1,7 +1,8 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, create_engine
+from sqlalchemy import Column, Integer, String, ForeignKey, create_engine, text
 from sqlalchemy.orm import relationship, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.inspection import inspect
+from sqlalchemy.dialects.postgresql import ENUM
 from dotenv import load_dotenv
 import os
 
@@ -14,22 +15,33 @@ except ImportError:
 # Load the .env file
 load_dotenv()
 
+# Define the ENUM type separately to prevent automatic creation
+role_type_enum = ENUM('ADMIN', 'INSTRUCTOR', 'STUDENT', name='roletype', create_type=False)
+
 # Function to establish the database
 def create_db():
     # Connect to the database (replace with your desired database URL)
     engine = create_engine(os.getenv("SQLALCHEMY_DATABASE_URI"), echo=False)
     
-    # Check if tables already exist
-    inspector = inspect(engine)
-    tables = inspector.get_table_names()
+    # Create a connection for checking existing ENUM types or other database-specific objects.
+    with engine.connect() as connection:
+        # Check if the ENUM type 'roletype' exists and create it if it doesn't
+        result = connection.execute(
+            text("SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'roletype');")
+        )
+        exists = result.scalar()
+        
+        if not exists:
+            # Create the ENUM type if it doesn't exist
+            role_type_enum.create(engine, checkfirst=True)
+            print("ENUM 'roletype' created.")
+        else:
+            print("ENUM 'roletype' already exists. Skipping creation.")
 
-    if not set(Base.metadata.tables.keys()).issubset(set(tables)):
-        # Create all tables if they don't exist
-        Base.metadata.create_all(engine)
-        print("Tables created.")
-    else:
-        print("Tables already exist. Skipping creation.")
-    
+    # Use create_all to create all tables that are defined in the metadata
+    Base.metadata.create_all(engine, checkfirst=True)
+    print("Tables created where necessary.")
+
     # Create a new session
     Session = sessionmaker(bind=engine)
     session = Session()
