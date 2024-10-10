@@ -34,8 +34,8 @@ class User(Base, TimestampMixin):
     role_id = Column(Integer, ForeignKey('roles.id', ondelete='CASCADE'), nullable=False)
     role = relationship("Role", back_populates="users")
     profile = relationship("UserProfile", back_populates="user", uselist=False, cascade="all, delete-orphan", lazy='joined')
-    courses = relationship("Course", back_populates="instructor")
-    
+    courses = relationship("Course", back_populates="instructor" , cascade="all, delete-orphan", lazy='selectin')
+    enroll = relationship("Course", back_populates="user_enroll" , cascade="all, delete-orphan", lazy='selectin')
     def __repr__(self):
         return f"<User(id={self.id}, username={self.user_name}, email={self.email})>"
 
@@ -62,6 +62,7 @@ class Course(Base, TimestampMixin):
     course_instructor_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
     instructor = relationship("User", back_populates="courses")
     modules = relationship("Module", back_populates="course", cascade="all, delete-orphan", lazy='selectin')
+    enrolls = relationship("Enroll", back_populates="course_enroll", cascade="all, delete-orphan", lazy='selectin')
     
     def __repr__(self):
         return f"<Course(id={self.id}, title={self.title})>"
@@ -74,5 +75,17 @@ class Module(Base, TimestampMixin):
     content = Column(Text, nullable=True)
     course = relationship("Course", back_populates="modules")
     
+    def __repr__(self):
+        return f"<Module(id={self.id}, title={self.title})>"
+
+class Enroll(Base, TimestampMixin):
+    __tablename__ = 'enrolls'
+    id = Column(Integer, primary_key=True)
+    course_id = Column(Integer, ForeignKey('courses.id', ondelete='CASCADE'), nullable=False)
+    user_id = Column(Integer, ForeignKey('courses.id', ondelete='CASCADE'), nullable=False)
+    course_enroll = relationship("Course", back_populates="enrolls")
+    user_enroll = relationship("Course", back_populates="enrolls")
+    
+
     def __repr__(self):
         return f"<Module(id={self.id}, title={self.title})>"

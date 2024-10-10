@@ -599,6 +599,28 @@ def delete_module_from_course(id, moduleId):
 ############################################################## ENROLL #########################################################################
 
 
+@app.route('courses/<int:id>/enroll', methods=['POST'])
+@jwt_required
+def enroll_to_course(id):
+    current_user = get_jwt_identity()
+    user_name = current_user['user_name']
+    user_role = current_user['role']
+    user_id = session.query(User).filter_by(user_name=user_name).first().id
+    if user_role != 'student':
+        return jsonify({"message": "Only student can enroll."}), 403
+    course = session.query(Course).filter_by(id=id).first()
+    if not course:
+        return jsonify({"message": "Course not found."}), 404
+    
+    new_enroll = Module(
+        course_id=course.id,
+        user_id=user_id
+    )
+    session.add(new_enroll)
+    session.commit()
+    return jsonify({"message": "Enrolled to course successfuly!", "course id": id, "user": user_name}), 201
+
+
 # Start the Flask application
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
