@@ -15,6 +15,8 @@ import os
 import redis
 import hashlib
 
+
+######################################################## INITIALIZATION #######################################################################
 # Load environment variables from .env file
 load_dotenv()
 
@@ -86,6 +88,9 @@ def revoke_token_for_fingerprint(user_name, fingerprint):
         # Remove the old active token reference
         redis_client.delete(f"active_token:{user_name}:{fingerprint}")
 
+
+###############################################################################################################################################
+########################################################### AUTHENTICATION ####################################################################
 # Route to register a new user
 @app.route('/auth/register', methods=['POST'])
 def register():
@@ -128,8 +133,8 @@ def register():
     try:
         # Create a new user
         new_user = User(
-            user_name=data['user_name'],
-            email=data['email'],
+            user_name=data['user_name'].strip(),
+            email=data['email'].strip(),
             password_hash=hashed_password.decode('utf-8'),
             role_id=role.id
         )
@@ -141,9 +146,9 @@ def register():
         # Now create the profile and link it to the user
         new_profile = UserProfile(
             user_id=new_user.id,  # Link to the created user
-            first_name=data['first_name'],
-            last_name=data['last_name'],
-            bio=data.get('bio', ''),  # Optional field, use default empty string
+            first_name=data['first_name'].strip(),
+            last_name=data['last_name'].strip(),
+            bio=data.get('bio', '').strip(),  # Optional field, use default empty string
             profile_picture=data.get('profile_picture', ''),  # Optional
             additional_info=data.get('additional_info', '')  # Optional
         )
@@ -206,11 +211,6 @@ def logout():
 
     return jsonify(message="Successfully logged out"), 200
 
-    
-
-
-
-
 @app.route('/auth/role', methods=['GET'])
 @jwt_required()
 def role():
@@ -268,6 +268,8 @@ def profile():
     # Return the response as JSON
     return jsonify(response), 200
 
+###############################################################################################################################################
+############################################################## USERS ##########################################################################
 
 @app.route('/users', methods=['GET'])
 @jwt_required()  # Ensure the user is authenticated
@@ -362,17 +364,17 @@ def update_user_profile(id):
     if 'first_name' in data:
         if data['first_name'].strip() == "":
             return jsonify({"message": "First name cannot be empty"}), 400
-        user_profile.first_name = data['first_name']
+        user_profile.first_name = data['first_name'].strip()
 
     # Check 'last_name' if provided and ensure it's not empty
     if 'last_name' in data:
         if data['last_name'].strip() == "":
             return jsonify({"message": "Last name cannot be empty"}), 400
-        user_profile.last_name = data['last_name']
+        user_profile.last_name = data['last_name'].strip()
 
     # Update 'bio' if provided; allow it to be empty if needed
     if 'bio' in data:
-        user_profile.bio = data['bio']
+        user_profile.bio = data['bio'].strip()
 
     session.commit()
     return jsonify({"message": "Profile updated successfully"}), 200
@@ -394,7 +396,207 @@ def delete_user(id):
     else:
         return jsonify({"message": "User not found"}), 404
 
+###############################################################################################################################################
+############################################################## COURSES ########################################################################
 
+@app.route('/courses', methods=['POST'])
+@jwt_required()
+def create_course():
+    current_user = get_jwt_identity()
+    user_role = current_user['role']
+    user_id = session.query(User).filter_by(user_name=current_user['user_name']).first().id
+    # Ensure only instructors can create courses
+    if user_role != 'instructor' and user_role != 'admin':
+        return jsonify({"message": "Only instructors can create courses."}), 403
+    data = request.get_json()
+    title = data.get('title').strip()
+    description = data.get('description', '')
+    if not title:
+        return jsonify({"message": "Title is required."}), 400
+    # Check if the course already exists
+    if session.query(Course).filter_by(title=title).first():
+        return jsonify({"message": "Title alread exists for a different course, use a different name!"}), 400
+    new_course = Course(
+        title=title,
+        description=description,
+        course_instructor_id=user_id
+    )
+    session.add(new_course)
+    session.commit()
+    return jsonify({"message": "Course created successfully!", "course_id": new_course.id}), 201
+
+@app.route('/courses', methods=['GET'])
+def list_courses():
+    # Get the 'limit' query parameter from the request (default to 10 if not provided)
+    limit = request.args.get('limit', default=10, type=int)
+    courses = session.query(Course).limit(limit).all()
+    course_list = [{"id": course.id, "title": course.title, "description": course.description} for course in courses]
+    return jsonify({"courses": course_list}), 200
+
+@app.route('/courses/<int:id>', methods=['GET'])
+@jwt_required()
+def get_course_details(id):
+    course = session.query(Course).filter_by(id=id).first()
+    if not course:
+        return jsonify({"message": "Course not found."}), 404
+    modules = [{"id": module.id, "title": module.title, "content": module.content} for module in course.modules]
+    response = {
+        "id": course.id,
+        "title": course.title,
+        "description": course.description,
+        "modules": modules
+    }
+    return jsonify(response), 200
+
+@app.route('/courses/<int:id>', methods=['PUT'])
+@jwt_required()
+def update_course(id):
+    current_user = get_jwt_identity()
+    user_role = current_user['role']
+    # Get the course to update
+    course = session.query(Course).filter_by(id=id).first()
+    if not course:
+        return jsonify({"message": "Course not found."}), 404
+    # Ensure only the instructor who created the course or an admin can update it
+    if course.instructor.user_name != current_user['user_name'] and user_role != 'admin':
+        return jsonify({"message": "You do not have permission to update this course."}), 403
+    data = request.get_json()
+    title = data.get('title').strip()
+    if 'title' in data:
+        if data['title'].strip() == "":
+            return jsonify({"message": "Title can not be empty"}), 400
+        current_title = session.query(Course).filter_by(title=data['title']).first()
+        if current_title and current_title.id != id:
+            return jsonify({"message": "Title alread exists in a different Course, use a different name!"}), 400
+        course.title = title
+    else:
+        course.title = course.title
+    course.description = data.get('description', course.description)
+    session.commit()
+    return jsonify({"message": "Course updated successfully."}), 200
+
+@app.route('/courses/<int:id>', methods=['DELETE'])
+@jwt_required()
+def delete_course(id):
+    current_user = get_jwt_identity()
+    user_role = current_user['role']
+    course = session.query(Course).filter_by(id=id).first()
+    if not course:
+        return jsonify({"message": "Course not found."}), 404
+    # Ensure only the instructor who created the course or an admin can delete it
+    if course.instructor.user_name != current_user['user_name'] and user_role != 'admin':
+        return jsonify({"message": "You do not have permission to delete this course."}), 403
+    session.delete(course)
+    session.commit()
+    return jsonify({"message": "Course deleted successfully."}), 200
+
+###############################################################################################################################################
+############################################################## MODULE #########################################################################
+
+@app.route('/courses/<int:id>/modules', methods=['POST'])
+@jwt_required()
+def add_module_to_course(id):
+    current_user = get_jwt_identity()
+    user_role = current_user['role']
+    if user_role != 'instructor' and user_role != 'admin':
+        return jsonify({"message": "Only instructors can add modules."}), 403
+    course = session.query(Course).filter_by(id=id).first()
+    if not course:
+        return jsonify({"message": "Course not found."}), 404
+    if course.instructor.user_name != current_user['user_name'] and user_role != 'admin':
+        return jsonify({"message": "You are not the instructor of this course."}), 403
+    data = request.get_json()
+    title = data.get('title').strip()
+    content = data.get('content', '')
+    if not title:
+        return jsonify({"message": "Module title is required."}), 400
+    if session.query(Module).filter_by(title=data['title'], course_id=id).first():
+        return jsonify({"message": "Title alread exists for a different module, use a different name!"}), 400
+    if data['title'] == '':
+        return jsonify({"message": "Title cannot be empty!"}), 400
+    new_module = Module(
+        course_id=course.id,
+        title=title,
+        content=content
+    )
+    session.add(new_module)
+    session.commit()
+    return jsonify({"message": "Module added successfully!", "module_id": new_module.id}), 201
+
+@app.route('/courses/<int:id>/modules', methods=['GET'])
+@jwt_required()
+def get_modules(id):
+    limit = request.args.get('limit', default=10, type=int)
+    course = session.query(Course).filter_by(id=id).first()
+    if not course:
+        return jsonify({"message": "Course not found."}), 404
+    # Retrieve the module and ensure it belongs to the specified course
+    if not course.modules:
+        return jsonify({"message": "Module not found in the specified course."}), 404
+    module_data = [{"id": module.id, "title": module.title, "content": module.content} for module in course.modules[:limit]]
+    return jsonify({"modules": module_data}), 200
+
+@app.route('/courses/<int:id>/modules/<int:moduleId>', methods=['GET'])
+@jwt_required()
+def get_module(id, moduleId):
+    # Ensure the course exists
+    module = session.query(Module).filter_by(id=moduleId, course_id=id).first()
+    if not module:
+        return jsonify({"message": "Module not found. make sure module id and course id exist"}), 404
+    
+    response = {
+        "id": module.id,
+        "title": module.title,
+        "content": module.content,
+        "course_id": module.course_id,
+    }
+    # Return the response with a 200 status code
+    return jsonify(response), 200
+
+@app.route('/courses/<int:id>/modules/<int:moduleId>', methods=['PUT'])
+@jwt_required()
+def update_module(id, moduleId):
+    current_user = get_jwt_identity()
+    user_role = current_user['role']
+    module = session.query(Module).filter_by(id=moduleId, course_id=id).first()
+    if not module:
+        return jsonify({"message": "Module not found."}), 404
+    if module.course.instructor.user_name != current_user['user_name'] and user_role != 'admin':
+        return jsonify({"message": "You do not have permission to delete this module."}), 403
+    data = request.get_json()
+    title = data.get('title').strip()
+    if 'title' in data:
+        if data['title'].strip() == "":
+            return jsonify({"message": "Title can not be empty"}), 400
+        current_title = session.query(Module).filter_by(title=data['title'], course_id=id).first()
+        if current_title and current_title.id != moduleId:
+            return jsonify({"message": "Title alread exists in a different Module, use a different name!"}), 400
+        module.title = title
+    else:
+        module.title = module.title
+    module.content = data.get('content', module.content)
+    session.commit()
+    return jsonify({"message": "Module updated successfully."}), 200
+
+
+@app.route('/courses/<int:id>/modules/<int:moduleId>', methods=['DELETE'])
+@jwt_required()
+def delete_module_from_course(id, moduleId):
+    current_user = get_jwt_identity()
+    user_role = current_user['role']
+    module = session.query(Module).filter_by(id=moduleId, course_id=id).first()
+    if not module:
+        return jsonify({"message": "Module not found."}), 404
+    course = session.query(Course).filter_by(id=id).first()
+    # Ensure only the instructor of the course or an admin can delete the module
+    if course.instructor.user_name != current_user['user_name'] and user_role != 'admin':
+        return jsonify({"message": "You do not have permission to delete this module."}), 403
+    session.delete(module)
+    session.commit()
+    return jsonify({"message": "Module deleted successfully."}), 200
+
+###############################################################################################################################################
+############################################################## ENROLL #########################################################################
 
 
 # Start the Flask application
