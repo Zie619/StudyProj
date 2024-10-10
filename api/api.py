@@ -111,7 +111,9 @@ def register():
             return jsonify({"message": f"{field} is required!"}), 400
 
     # Check if the user already exists
-    if session.query(User).filter_by(user_name=data['user_name']).first() or session.query(User).filter_by(email=data['email']).first():
+    user_name = data.get('email').strip()
+    email = data.get('email').strip()
+    if session.query(User).filter_by(user_name=user_name).first() or session.query(User).filter_by(email=email).first():
         return jsonify({"message": "User already exists!"}), 400
 
     # Validate and convert the role string to the RoleType enum
@@ -384,12 +386,15 @@ def update_user_profile(id):
 @app.route('/users/<int:id>', methods=['DELETE'])
 @jwt_required()
 def delete_user(id):
-    current_user_role = get_jwt_identity()['role']
-    if current_user_role.lower() != 'admin':
+    current_user = get_jwt_identity()
+    user_role = current_user['role']
+    user_id = session.query(User).filter_by(user_name=current_user['user_name']).first().id
+    if user_role.lower() != 'admin' and user_id != id:
         return jsonify({"message": "You do not have permission to delete users"}), 403
 
     user = session.query(User).filter_by(id=id).first()
     if user:
+        logout()
         session.delete(user)
         session.commit()
         return jsonify({"message": "User deleted successfully"}), 200
@@ -600,7 +605,7 @@ def delete_module_from_course(id, moduleId):
 
 
 @app.route('/courses/<int:id>/enroll', methods=['POST'])
-@jwt_required
+@jwt_required()
 def enroll_to_course(id):
     current_user = get_jwt_identity()
     user_name = current_user['user_name']
@@ -612,7 +617,7 @@ def enroll_to_course(id):
     if not course:
         return jsonify({"message": "Course not found."}), 404
     
-    new_enroll = Module(
+    new_enroll = Enroll(
         course_id=course.id,
         user_id=user_id
     )
