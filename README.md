@@ -1,3 +1,4 @@
+This readme and the files for the structure and progress in PROGRESS folder are made for my usage, all files created using GPT to help me understand the techs and workway i should use , as a junior i don't know what i should do so i am getting help from gpt. 95% of the code itself was written by me, i did use gpt for some parts i was clueless and wanted more understanding. 
 # README
 
 ## Project: Online Learning Platform with Video Streaming and Progress Tracking
